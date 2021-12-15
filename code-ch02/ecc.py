@@ -2,11 +2,9 @@ from unittest import TestCase
 
 
 class FieldElement:
-
     def __init__(self, num, prime):
         if num >= prime or num < 0:
-            error = 'Num {} not in field range 0 to {}'.format(
-                num, prime - 1)
+            error = 'Num {} not in field range 0 to {}'.format(num, prime - 1)
             raise ValueError(error)
         self.num = num
         self.prime = prime
@@ -70,7 +68,6 @@ class FieldElement:
 
 
 class FieldElementTest(TestCase):
-
     def test_ne(self):
         a = FieldElement(2, 31)
         b = FieldElement(2, 31)
@@ -120,7 +117,6 @@ class FieldElementTest(TestCase):
 
 # tag::source1[]
 class Point:
-
     def __init__(self, x, y, a, b):
         self.a = a
         self.b = b
@@ -138,11 +134,13 @@ class Point:
     def __eq__(self, other):  # <2>
         return self.x == other.x and self.y == other.y \
             and self.a == other.a and self.b == other.b
+
     # end::source1[]
 
     def __ne__(self, other):
         # this should be the inverse of the == operator
-        raise NotImplementedError
+        return self.x != other.x or self.y != other.y \
+            or self.a != other.a or self.b != other.b
 
     def __repr__(self):
         if self.x is None:
@@ -153,8 +151,7 @@ class Point:
     # tag::source3[]
     def __add__(self, other):  # <2>
         if self.a != other.a or self.b != other.b:
-            raise TypeError('Points {}, {} are not on the same curve'.format
-            (self, other))
+            raise TypeError('Points {}, {} are not on the same curve'.format(self, other))
 
         if self.x is None:  # <3>
             return other
@@ -164,24 +161,33 @@ class Point:
 
         # Case 1: self.x == other.x, self.y != other.y
         # Result is point at infinity
-
+        if self.x == other.x and self.y != other.y:
+            return __class__(None, None, self.a, self.b)
         # Case 2: self.x ≠ other.x
         # Formula (x3,y3)==(x1,y1)+(x2,y2)
         # s=(y2-y1)/(x2-x1)
         # x3=s**2-x1-x2
         # y3=s*(x1-x3)-y1
-
+        if self.x != other.x:
+            s = (other.y - self.y) / (other.x - self.x)
+            x = pow(s, 2) - self.x - other.x
+            y = s * (self.x - x) - self.y
+            return __class__(x, y, self.a, self.b)
         # Case 3: self == other
         # Formula (x3,y3)=(x1,y1)+(x1,y1)
         # s=(3*x1**2+a)/(2*y1)
         # x3=s**2-2*x1
         # y3=s*(x1-x3)-y1
-
-        raise NotImplementedError
+        if self == other:
+            if self.y == 0 * self.x:
+                return self.__class__(None, None, self.a, self.b)
+            s = (3 * pow(self.x, 2) + self.a) / (2 * self.y)
+            x = pow(s, 2) - 2 * self.x
+            y = s * (self.x - x) - self.y
+            return __class__(x, y, self.a, self.b)
 
 
 class PointTest(TestCase):
-
     def test_ne(self):
         a = Point(x=3, y=-7, a=5, b=7)
         b = Point(x=18, y=77, a=5, b=7)
